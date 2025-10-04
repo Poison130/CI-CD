@@ -7,7 +7,7 @@ sys.path.append('/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.
 
 USE_CALCULATOR = 1
 USE_HISTORY = 1
-USE_WEB_INTERFACE = 0
+USE_WEB_INTERFACE = 1
 
 try:
     from flask import Flask, render_template, request, jsonify
