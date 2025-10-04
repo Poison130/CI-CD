@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Калькулятор с историей</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .container { display: flex; gap: 20px; }
+        .calculator { flex: 1; }
+        .history { flex: 1; }
+        .display { width: 100%; height: 40px; font-size: 18px; margin-bottom: 10px; padding: 5px; }
+        .buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+        button { height: 50px; font-size: 18px; cursor: pointer; }
+        .config { background: #f0f0f0; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+        .config button { height: auto; padding: 5px 10px; margin: 0 5px; }
+        .history-item { padding: 5px; border-bottom: 1px solid #ddd; }
+        .error { color: red; }
+        .success { color: green; }
+        .mode-indicator { background: #4CAF50; color: white; padding: 10px; border-radius: 5px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+     <div class="container">
+        <div class="calculator">
+            <h3>Калькулятор</h3>
+            <input type="text" id="display" class="display" placeholder="Введите выражение..." readonly>
+            <div class="buttons">
+                <button onclick="clearDisplay()">C</button>
+                <button onclick="appendToDisplay('(')">(</button>
+                <button onclick="appendToDisplay(')')">)</button>
+                <button onclick="appendToDisplay('/')">/</button>
+                
+                <button onclick="appendToDisplay('7')">7</button>
+                <button onclick="appendToDisplay('8')">8</button>
+                <button onclick="appendToDisplay('9')">9</button>
+                <button onclick="appendToDisplay('*')">*</button>
+                
+                <button onclick="appendToDisplay('4')">4</button>
+                <button onclick="appendToDisplay('5')">5</button>
+                <button onclick="appendToDisplay('6')">6</button>
+                <button onclick="appendToDisplay('-')">-</button>
+                
+                <button onclick="appendToDisplay('1')">1</button>
+                <button onclick="appendToDisplay('2')">2</button>
+                <button onclick="appendToDisplay('3')">3</button>
+                <button onclick="appendToDisplay('+')">+</button>
+                
+                <button onclick="appendToDisplay('0')">0</button>
+                <button onclick="appendToDisplay('.')">.</button>
+                <button onclick="appendToDisplay('**')">^</button>
+                <button onclick="calculate()" style="background: #4CAF50; color: white;">=</button>
+            </div>
+            <div id="result" style="margin-top: 10px;"></div>
+        </div>
+
+        <div class="history">
+            <h3>История запросов</h3>
+            <div id="history-list">
+                {% if history_enabled %}
+                    {% for record in history %}
+                    <div class="history-item">
+                        <strong>{{ record.expression }}</strong> = {{ record.result }}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div>История отключена</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let display = document.getElementById('display');
+        
+        function appendToDisplay(value) {
+            display.value += value;
+        }
+        
+        function clearDisplay() {
+            display.value = '';
+            document.getElementById('result').innerHTML = '';
+        }
+        
+        function calculate() {
+            const expression = display.value;
+            
+            fetch('/calculate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({expression: expression})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('result').innerHTML = `<span class="error">Ошибка: ${data.error}</span>`;
+                } else {
+                    document.getElementById('result').innerHTML = `<span class="success">= ${data.result}</span>`;
+                    loadHistory();
+                }
+            });
+        }
+        
+        function loadHistory() {
+            fetch('/history')
+                .then(response => response.json())
+                .then(data => {
+                    const historyList = document.getElementById('history-list');
+                    if (data.enabled) {
+                        historyList.innerHTML = data.history.map(record => 
+                            `<div class="history-item"><strong>${record.expression}</strong> = ${record.result}</div>`
+                        ).join('');
+                    } else {
+                        historyList.innerHTML = '<div>История отключена</div>';
+                    }
+                });
+        }
+        
+        function toggleModule(module) {
+            const config = {};
+            config[module] = document.getElementById(module + '-status').textContent === 'ВКЛ' ? 0 : 1;
+            
+            fetch('/config', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(config)
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('web-status').textContent = data.web ? 'ВКЛ' : 'ВЫКЛ';
+                document.getElementById('calc-status').textContent = data.calculator ? 'ВКЛ' : 'ВЫКЛ';
+                document.getElementById('hist-status').textContent = data.history ? 'ВКЛ' : 'ВЫКЛ';
+                
+                if (module === 'web' && !data.web) {
+                    setTimeout(() => {
+                        alert('Веб-интерфейс отключен. Программа перезапустится в терминальном режиме.');
+                        location.reload();
+                    }, 1000);
+                } else {
+                    location.reload();
+                }
+            });
+        }
+        
+        function testTopDown() {
+            fetch('/test/top-down')
+                .then(response => response.json())
+                .then(data => {
+                    alert('Тест сверху-вниз:\n' + data.steps.join('\n'));
+                });
+        }
+        
+        function testBottomUp() {
+            fetch('/test/bottom-up')
+                .then(response => response.json())
+                .then(data => {
+                    alert('Тест снизу-вверх:\n' + data.steps.join('\n'));
+                });
+        }
+        
+        loadHistory();
+    </script>
+</body>
+</html>
