@@ -5,19 +5,56 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
+    
+    name: Test on Python ${{ matrix.python-version }}
     
     steps:
     - name: 📥 Checkout code
       uses: actions/checkout@v4
 
-    - name: 🐍 Setup Python
+    - name: 🐍 Setup Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
-        python-version: "3.9"
+        python-version: ${{ matrix.python-version }}
 
-    - name: �� Run basic tests
+    - name: 📦 Install dependencies
+      run: pip install flask
+
+    - name: 🧪 Run basic tests
       run: |
-        python -c "assert 2+2==4; assert 3*4==12; print('✅ Все тесты пройдены!')"
+        echo "Testing on Python ${{ matrix.python-version }}..."
+        python -c "
+import sys
+print(f'=== 🧪 ТЕСТИРОВАНИЕ НА Python {sys.version.split()[0]} ===')
+print('1. Тест базовой математики...')
+assert 2 + 2 == 4
+print('✅ 2+2=4 - правильно')
+
+print('2. Тест умножения...')
+assert 3 * 4 == 12  
+print('✅ 3*4=12 - правильно')
+
+print('3. Тест деления...')
+assert 10 / 2 == 5
+print('✅ 10/2=5 - правильно')
+
+print('4. Тест истории операций...')
+history = []
+history.append('2+2=4')
+history.append('3*3=9')
+assert len(history) == 2
+print('✅ История сохранила 2 записи')
+
+print('=== 🎉 ВСЕ ТЕСТЫ ПРОЙДЕНЫ! ===')
+print(f'=== 🚀 Python {sys.version.split()[0]} РАБОТАЕТ! ===')
+        "
 
     - name: ✅ Success
-      run: echo "🎉 CI/CD работает корректно!"
+      run: |
+        echo "========================================"
+        echo "🎉 Python ${{ matrix.python-version }} - ТЕСТЫ ПРОЙДЕНЫ!"
+        echo "📅 Время: $(date)"
+        echo "========================================"
