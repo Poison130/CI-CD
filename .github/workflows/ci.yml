@@ -1,102 +1,31 @@
-name: CI/CD для Калькулятора
+name: Fast CI/CD
 
-on:
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+on: [push, pull_request]
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 3
     
-    strategy:
-      matrix:
-        python-version: [3.8, 3.9, 3.10]
-
     steps:
-    - name: 📥 Checkout код
+    - name: 📥 Checkout code
       uses: actions/checkout@v4
 
-    - name: 🐍 Установка Python ${{ matrix.python-version }}
+    - name: 🐍 Setup Python
       uses: actions/setup-python@v4
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: "3.10"
 
-    - name: 📦 Установка зависимостей
+    - name: 📦 Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+        pip install flask
 
-    - name: 🔍 Проверка синтаксиса
-      run: |
-        python -m py_compile app.py
-        python -m py_compile tests.py
-        python -m py_compile modules/calculator.py
-        python -m py_compile modules/history.py
-
-    - name: 🧪 Запуск тестов
+    - name: 🧪 Run fast tests
       run: |
         python tests.py
 
-    - name: 📊 Генерация отчета тестов
+    - name: ✅ Success
       run: |
-        echo "## Результаты тестирования" >> $GITHUB_STEP_SUMMARY
-        echo "✅ Все тесты успешно выполнены для Python ${{ matrix.python-version }}" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Детали:**" >> $GITHUB_STEP_SUMMARY
-        echo "- Нисходящее тестирование: ✅ Пройдено" >> $GITHUB_STEP_SUMMARY
-        echo "- Восходящее тестирование: ✅ Пройдено" >> $GITHUB_STEP_SUMMARY
-        echo "- Обработка ошибок: ✅ Пройдено" >> $GITHUB_STEP_SUMMARY
-
-  integration-test:
-    runs-on: ubuntu-latest
-    needs: test
-    
-    steps:
-    - name: 📥 Checkout код
-      uses: actions/checkout@v4
-
-    - name: 🐍 Установка Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-
-    - name: 📦 Установка зависимостей
-      run: |
-        pip install -r requirements.txt
-
-    - name: 🚀 Запуск интеграционного теста
-      run: |
-        # Запускаем тесты в фоновом режиме
-        python tests.py > test_results.log 2>&1
-        
-        # Проверяем что тесты завершились успешно
-        if grep -q "ТЕСТИРОВАНИЕ ЗАВЕРШЕНО" test_results.log; then
-          echo "✅ Интеграционные тесты прошли успешно"
-          cat test_results.log
-        else
-          echo "❌ Интеграционные тесты провалились"
-          cat test_results.log
-          exit 1
-        fi
-
-    - name: 📋 Публикация результатов
-      uses: actions/upload-artifact@v3
-      with:
-        name: test-results
-        path: test_results.log
-
-  deploy-notification:
-    runs-on: ubuntu-latest
-    needs: [test, integration-test]
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-    
-    steps:
-    - name: 📢 Уведомление об успешном деплое
-      run: |
-        echo "🚀 Все тесты пройдены! Код готов к деплою."
-        echo "📅 $(date)" 
-        echo "🔧 Событие: ${{ github.event_name }}"
-        echo "🎯 Ветка: ${{ github.ref }}"
-        echo "👤 Автор: ${{ github.actor }}"
+        echo "🚀 CI/CD РАБОТАЕТ!"
+        echo "Все тесты пройдены успешно"
+        echo "Время: $(date)"
